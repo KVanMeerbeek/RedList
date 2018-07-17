@@ -1,4 +1,4 @@
-setwd(choose.dir()) #set the working directory (place where everything will be saved)
+setwd(choose.dir()) #set working directory (place where everything will be saved)
 
 #load packages
 #install.packages("spocc")
