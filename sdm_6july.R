@@ -10,8 +10,14 @@ library(taxize)
 #lookup all synonyms for a species name in the database of ITIS (must be length 1-vector, can also be other databases: tropicos, col, nbn, worms)
 w <- c("Agrimonia eupatoria")
 x <- synonyms(w, db = "itis")
-y <- x$`Gentiana pneumonanthe`
+x1 <- synonyms(w, db = "itis")
+x2 <- synonyms(w, db = "itis")
 
+a <- c("Aegopodium podagraria")
+b <- synonyms(a, db = "itis")
+
+procera <- c("Agrimonia procera")
+procera_syn <- synonyms(procera, db = "itis")
 #If the species has no synonyms an empty list will be returned. Then we just take the original input name (= w). When the species does has synonyms, we make a new vector (z = original name + synonym names). The outcome will be a character vector which can be used as an input for spocc
 if (is.na(y) == TRUE) {
   z = w
