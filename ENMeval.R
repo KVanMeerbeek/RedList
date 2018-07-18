@@ -6,7 +6,7 @@ library(raster)
 library(dismo)
 
 #####################################################
-#### Data Acquisition & Pre-processing ####
+#### Data Acquisition & Pre-processing #####
 #####################################################
 
 # Search GBIF for occurrence data.
@@ -158,7 +158,7 @@ var.importance(aic.opt)
 #Check .lambdas file
 aic.opt@lambdas
 
-#this is not very structured. Therefore we´ll use parse_lambdas() from rmaxent
+#this is not very structured. Therefore we?ll use parse_lambdas() from rmaxent
 
 #Load rmaxent package
 library(devtools)
