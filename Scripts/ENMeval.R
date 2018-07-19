@@ -1,12 +1,13 @@
 #https://cran.r-project.org/web/packages/ENMeval/vignettes/ENMeval-vignette.html
 
 library(spocc)
-library(ENMeval)
 library(raster)
 library(dismo)
+library(rJava)
+library(ENMeval)
 
 #####################################################
-#### Data Acquisition & Pre-processing #####
+#### Data Acquisition & Pre-processing ####
 #####################################################
 
 # Search GBIF for occurrence data.
@@ -51,10 +52,10 @@ occs <- occs[-index,]
 # Let's plot our new points over the old ones to see what a good job we did.
 points(occs, col='blue')
 
-# Make a SpatialPoints object
+# Make a SpatialPoints object --> need extra explanation about the background extent
 occs.sp <- SpatialPoints(occs)
 
-# Get the bounding box of the points
+# Get the bounding box (?) of the points
 bb <- bbox(occs.sp)
 
 # Add 5 degrees to each bound by stretching each bound by 10, as the resolution is 0.5 degree.
@@ -63,6 +64,7 @@ bb.buf <- extent(bb[1]-10, bb[3]+10, bb[2]-10, bb[4]+10)
 # Crop environmental layers to match the study extent
 envs.backg <- crop(envs, bb.buf)
 
+install.packages("maptools")
 library(maptools)
 library(rgeos)
 
@@ -107,7 +109,7 @@ points(bg, col='red')
 #####################################################
 
 #The main parameters to define when calling ENMevaluate are:
-# method = method for partitioning occurrences for evaluation
+#method = method for partitioning occurrences for evaluation
 #RMvalues = the range of regularization multiplier values and 
 #fc = the combinations of feature class to consider ( L=linear, Q=quadratic, P=product,T=threshold, and H=hinge) 
 #If any of your predictor variables are categorical (e.g., biomes), 
@@ -153,14 +155,16 @@ aic.opt
 #The "results" slot shows the Maxent model statistics:
 aic.opt@results
 
+#get a data.frame of two variable importance metrics: percent contribution and permutation importance.
 var.importance(aic.opt)
 
 #Check .lambdas file
 aic.opt@lambdas
 
-#this is not very structured. Therefore we?ll use parse_lambdas() from rmaxent
+#this is not very structured. Therefore we´ll use parse_lambdas() from rmaxent
 
 #Load rmaxent package
+install.packages("devtools")
 library(devtools)
 install_github('johnbaums/rmaxent')
 library(rmaxent)
@@ -175,12 +179,15 @@ parse_lambdas(aic.opt)
 
 #To identify which variable is most responsible for decreasing suitability in a given environment,
 #we can use the limiting function.
+
+library(lattice)
+
 lim <- limiting(envs, aic.opt)
 levelplot(lim, col.regions=rainbow) +
-  layer(sp.points(SpatialPoints(occs), pch=20, col=1))
+  layer(sp.points(SpatialPoints(occs), pch=20, col=1)) #won't work
 
 #####################################################
-#### Plotting results ####
+#### Plotting results ----
 #####################################################
 #Plot evaluation of different results
 eval.plot(eval2@results) #deltaAICc is default
@@ -202,12 +209,14 @@ plot(eval2@predictions[['LQP_1']], ylim=c(-30,20), xlim=c(-90,-40), legend=F, ma
 response(eval2@models[[1]])
 
 #####################################################
-#### Project onto new data ####
+#### Project onto new data ----
 #####################################################
 prediction <- project(aic.opt, envs)
 
 #plot the result:
+install.packages("rasterVis")
 library(rasterVis)
+install.packages("viridis")
 library(viridis)
 levelplot(prediction$prediction_logistic, margin=FALSE, col.regions=viridis, at=seq(0, 1, len=100)) +
   layer(sp.points(SpatialPoints(occs), pch=20, col=1))

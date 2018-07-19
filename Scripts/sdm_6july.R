@@ -2,8 +2,10 @@ setwd(choose.dir()) #set working directory (place where everything will be saved
 
 #install & load packages
 #install.packages("spocc")
-library(spocc)
 #install.packages("taxize")
+
+library(spocc)
+
 library(taxize)
 
 #Taxize ####

@@ -1,9 +1,13 @@
 setwd(choose.dir()) #set working directory (place where everything will be saved)
 
-#install.packages("spocc")
-library(spocc)
 #install.packages("taxize")
+#install.packages("spocc")
+#install.packages("dplyr")
+#install.packages("BIEN")
 library(taxize)
+library(spocc)
+library(dplyr)
+library(BIEN)
 
 species_list <- read.csv("C:/Users/user/Documents/School/Thesis/Data RedListSpecies/DataLoopTest.csv", header = TRUE, sep = ";")
 colnames(species_list) <- c("Scientific Name", "Dutch Name", "Red List Category")
@@ -28,8 +32,8 @@ for (i in 1:nrow(species_list)) {
     
     y <- c(z, z1)
   } #for-loop is still open en we continue with this vector of synonyms as an input for spocc
-  
-  write.csv(y ,paste("C:/Users/user/Documents/School/Thesis/Data RedListSpecies/Synonyms_taxize/", species_list[i, 1],".csv", sep="")) #maybe still need this
+}  
+  #write.csv(y ,paste("C:/Users/user/Documents/School/Thesis/Data RedListSpecies/Synonyms_taxize/", species_list[i, 1],".csv", sep="")) #maybe still need this
 
 #Spocc ####
 #lookup observations of species in database
@@ -38,32 +42,82 @@ for (i in 1:nrow(species_list)) {
   
 #we need to clean every data.frame in the list separatly for gbif, bison... because they differ in column numbers and column names
 
-  gbif <- species$gbif$data$Agrostemma_githago #should become [[species[i, 1]]]
-  gbif1 <- data.frame("Agrostemma githago", gbif$name, gbif$longitude, gbif$latitude, gbif$prov, gbif$issues, gbif$coordinateUncertaintyInMeters) 
-  colnames(gbif1) <- c("species", "database name", "x_original", "y_original", "prov", "issues", "spatial error")
+  gbif <- species$gbif$data$Agrostemma_githago #should become [[species[i, 1]]] for one species it is Agrostemma_githago
+  if (length(gbif) == 0) {
+    gbif1 <- data.frame()
+  } else {
+    gbif1 <- select(gbif, "databaseName" = "name", "x_original" = "longitude", "y_original" = "latitude", "prov" = "prov", "spatialError" = "coordinateUncertaintyInMeters", "issues" = "issues")
+    gbif1 <- data.frame("Agrostemma githago", gbif1)
+    gbif1 <- select(gbif1, "Species" = "X.Agrostemma.githago.", "databaseName", "x_original", "y_original", "prov", "spatialError", "issues")
+  }
+  
+  bison <- species$bison$data$Agrostemma_githago
+  if (length(bison) == 0) {
+    bison1 <- data.frame()  
+  } else {
+    bison1 <- select(bison, "databaseName" = "name", "x_original" = "longitude", "y_original" = "latitude", "prov" = "prov", "spatialError" = "coordinateuncertainty")
+    bison1 <- data.frame("Agrostemma githago", bison1, "")
+    bison1 <- select(bison1, "Species" = "X.Agrostemma.githago.", "databaseName", "x_original", "y_original", "prov", "spatialError", "issues" = "X..")
+  } #still need some check up for the column names of bison
+  
+  inat <- species$inat$data$Agrostemma_githago
+  if (length(inat) == 0) {
+    inat1 <- data.frame()   
+  } else {
+    inat1 <- select(inat, "databaseName" = "name", "x_original" = "longitude", "y_original" = "latitude", "prov" = "prov", "spatialError" = "positional_accuracy")
+    inat1 <- data.frame("Agrostemma githago", inat1, "")
+    inat1 <- select(inat1, "Species" = "X.Agrostemma.githago.", "databaseName", "x_original", "y_original", "prov", "spatialError", "issues" = "X..")
+  }
+  
+  ecoengine <- species$ecoengine$data$Agrostemma_githago
+  if (length(ecoengine) == 0) {
+    ecoengine1 <- data.frame()  
+  } else {
+    ecoengine1 <- select(ecoengine, "databaseName" = "name", "x_original" = "longitude", "y_original" = "latitude", "prov" = "prov", "spatialError" = "coordinate_uncertainty_in_meters")
+    ecoengine1 <- data.frame("Agrostemma githago", ecoengine1, "")
+    ecoengine1 <- select(ecoengine1, "Species" = "X.Agrostemma.githago.", "databaseName", "x_original", "y_original", "prov", "spatialError", "issues" = "X..")
+  }
+  
+  idigbio <- species$idigbio$data$Agrostemma_githago
+  if (length(idigbio) == 0) {
+    idigbio1 <- data.frame()   
+  } else {
+    idigbio1 <- select(idigbio, "databaseName" = "name", "x_original" = "longitude", "y_original" = "latitude", "prov" = "prov", "spatialError" = "coordinateuncertainty")
+    idigbio1 <- data.frame("Agrostemma githago", idigbio1, "")
+    idigbio1 <- select(idigbio1, "Species" = "X.Agrostemma.githago.", "databaseName", "x_original", "y_original", "prov", "spatialError", "issues" = "X..")
+  }
+  
+#BIEN ####
+  speciesBIEN <- BIEN_occurrence_species(y) #again we take the same character vector from taxize
+  if (length(speciesBIEN) == 0) {
+    speciesBIEN1 <- data.frame()   
+  } else {
+    speciesBIEN1 <- select(speciesBIEN, "databaseName" = "scrubbed_species_binomial", "x_original" = "longitude", "y_original" = "latitude", "prov" = "datasource")
+    speciesBIEN1 <- data.frame("Agrostemma githago", speciesBIEN1, "", "")
+    speciesBIEN1 <- select(speciesBIEN1, "Species" = "X.Agrostemma.githago.", "databaseName", "x_original", "y_original", "prov", "issues" = "X..", "spatialError" = "X...1")
+  }
+  
+  data <- rbind(gbif1, bison1, inat1, ecoengine1, idigbio1, speciesBIEN1)
+  data$x_original <- as.numeric(data$x_original) #otherwise we get errors when cleaning the data
+  data$y_original <- as.numeric(data$y_original)
+  data$spatialError <- as.numeric(data$spatialError)
+  
+  #here we will finally close the for-loop eventually  
 
-  bison <- species$bison$data$Agrostemma_githago #should become [[species[i, 1]]]
-  bison1 <- data.frame("Agrostemma githago", gbif$name, gbif$longitude, gbif$latitude, gbif$prov, gbif$issues, gbif$coordinateUncertaintyInMeters) 
-  colnames(gbif1) <- c("species", "database name", "x_original", "y_original", "prov", "issues", "spatial error")
+#SideNotes ####
   
-  inat <- species$inat$data$Agrostemma_githago #should become [[species[i, 1]]]
-  inat1 <- data.frame("Agrostemma githago", inat$name, inat$longitude, inat$latitude, inat$prov, "", inat$positional_accuracy) 
-  colnames(inat1) <- c("species", "database name", "x_original", "y_original", "prov", "issues", "spatial error")
+  #write csv when you use a loop
+  #we get one csvfile with the occurrence data for each species
+  #write.csv(data, paste("C:/Users/user/Documents/School/Thesis/Data RedListSpecies/Occurrence_data_spocc/", species_list[i, 1],".csv", sep="")) 
   
-  ecoengine <- species$ecoengine$data$Agrostemma_githago #should become [[species[i, 1]]]
-  ecoengine1 <- data.frame("Agrostemma githago", ecoengine$name, ecoengine$longitude, ecoengine$latitude, ecoengine$prov, "", ecoengine$coordinate_uncertainty_in_meters) 
-  colnames(ecoengine1) <- c("species", "database name", "x_original", "y_original", "prov", "issues", "spatial error")
+  #Ala database can be dropped because it wil only give results in like 1% of the cases....
+  #ala <- species$ala$data$Agrostemma_githago #should become [[species[i, 1]]]
+  #ala1 <- select(ala, "databaseName" = "name", "x_original" = "longitude", "y_original" = "latitude", "prov" = "prov", "spatialError" = "coordinateuncertainty")
+  #ala1 <- data.frame("Agrostemma githago", ala1, "")
+  #ala1 <- select(ala1, "species" = "X.Agrostemma.githago.", "databaseName", "x_original", "y_original", "prov", "spatialError", "issues" = "X..")
   
-  data <- rbind(gbif1, inat1, ecoengine1) 
-  
-  write.csv(species1, paste("C:/Users/user/Documents/School/Thesis/Data RedListSpecies/Occurrence_data_spocc/", species_list[i, 1],".csv", sep=""))
-} #here we finally close the for-loop 
-
-
-  
- # write.csv(y ,paste("C:/Users/user/Documents/School/Thesis/Data RedListSpecies/Synonyms_taxize/", species_list[i, 1],".csv", sep="")) #maybe still need this
-
-#species1 <- occ2df(species) #this one needs to be replaced by a suitable data frame
+  #problem when looping
+  #each synonym is in a separate list, need to find a way to get these out and put them underneath eachother
 
 
 
