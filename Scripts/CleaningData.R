@@ -2,10 +2,13 @@
 #install.packages("scrubr")
 #install.packages("biogeo")
 #install.packages("raster")
+#install.packages("rgbif")
+#install.packages("dismo")
 library(CoordinateCleaner)
 library(scrubr)
 library(biogeo) 
 library(raster)
+library(dismo)
 
 #Removal of duplicates ####
 
@@ -34,10 +37,13 @@ spatial_error <- subset(centroids, spatialError < 10000 | is.na(centroids$spatia
 
 #Occurrences based on fossil material, germplasm, literature ####
 
+clean_fosgermlit <- subset(spatial_error, !(issues == "gass84") & !(issues == "cdround"))
+#discuss which ones we will be deleting, now I just 'tested' these ones
+
 #Occurences located near sea/lakes ####
 
 file <- raster("C:/Users/user/Documents/School/Thesis/Climatic data/bio_1.bil")
-predictor <- stack(file)
+predictors <- stack(file)
 plot(file)
 plot(predictor)
 
@@ -46,31 +52,87 @@ plot(predictor)
 #predictors <- stack(files) # 
 #plot(files)
 
-spatial_e <- spatial_error
-names(spatial_e)
+clean_fosgermlit$ID <- seq.int(nrow(clean_fosgermlit)) #format for biogeo
+clean_fosgermlit %>% 
+  keepmainfields(ID = 'ID', Species = 'Species', x = 'x_original', y = 'y_original') -> species_arrange_main_fields
+species_nearest_cell <- nearestcell(dat = species_arrange_main_fields, rst = predictors) # returns a list
+species_nearest_cell_dat <- species_nearest_cell$dat #select list
 
-spatial_e$ID <- seq.int(nrow(spatial_e)) #format for biogeo
-spatial_e %>% 
-  keepmainfields(ID = 'ID', Species = 'Species', x = 'x_original', y = 'y_original') -> remnant_arrange_main_fields
-remnant_nearest_cell <- nearestcell(dat = remnant_arrange_main_fields, rst = predictor) # returns a list
-remnant_nearest_cell_dat <- remnant_nearest_cell$dat #select list
+for (i in 1:nrow(species_nearest_cell_dat)) {
+  if (is.na(species_nearest_cell_dat[i, 5]) == TRUE) { 
+    species_nearest_cell_dat[i,5] <- species_nearest_cell_dat[i, 3]
+  } else { 
+    species_nearest_cell_dat[i,5] <-  species_nearest_cell_dat[i,5]
+  } 
+}
+
+for (i in 1:nrow(species_nearest_cell_dat)) {
+  if (is.na(species_nearest_cell_dat[i, 6]) == TRUE) { 
+    species_nearest_cell_dat[i,6] <- species_nearest_cell_dat[i, 4]
+  } else { 
+    species_nearest_cell_dat[i,6] <-  species_nearest_cell_dat[i,6]
+  } 
+}
+
+species_clean_nearestcell <- select(species_nearest_cell_dat, "Species", "longitude" = "x_original", "latitude" = "y_original")
 
 #Second check for duplicates ####
 #We check again for duplicates because the nearestcell function may have shifted some of the occurrences to the same location
 
-#Clipping to Europe ####
+clean_duplicates <- cc_dupl(species_clean_nearestcell, lon = "longitude", lat = "latitude", species = "Species", additions = NULL, verbose = TRUE)
+
+clean_duplicates1 <- cc_equ(clean_duplicates, lon = "longitude", lat = "latitude", test = "identical", verbose = TRUE)
 
 #Geographical outliers ####
 
+#geo_out <- cc_outl(clean_duplicates1, lon = "longitude", lat = "latitude", species = "Species", value = "clean", verbose = TRUE) #searches geographical outliers by default
+
 #Botanical garden + Hyper-anthropogenic environment
+
+garden <- cc_inst(clean_duplicates1, lon = "longitude", lat = "latitude", verbose = TRUE)
+#anthro <- cc_urb(garden, lon = "longitude", lat = "latitude", verbose = TRUE) no reference provided
+
+#Clipping to Europe ####
+
+ext <- extent(-10, 30, 36, 72) # this is the extent for Europe, but only a rough guess. Needs discussion
+predictors <- crop(predictors, ext) # crop the extent to Europe
+crs(predictors) <- "+proj=longlat +datum=WGS84 +no_defs" #set projection to WGS84
+plot(predictors[[1]]) #have a look at the crop 
+#[[1]] refers to the layer in the stack
+
+setwd(choose.dir())
+writeRaster(x = predictors, filename = "predictor_clipped", overwrite = TRUE, format = "GTiff", bylayer = TRUE)
+setwd(choose.dir())
+
+coordinates(garden) <- ~ longitude + latitude #convert to spatial object
+cropped_occ <- crop(garden, predictors)
+
+plot(predictors)
+points(cropped_occ, col = "red", pch = 1, cex = 0.5)
 
 #One point per grid cell ####
 #We do this to reduce sampling bias (spatial), for example species closer to roads have a much higher change of being sampled causing an overestimation
+
+species_1_each_grid <- gridSample(garden, predictors, n=1) #one point per grid cell
+species_1_each_grid_df <- as.data.frame(species_1_each_grid) #convert to dataframe
+
+plot(predictors)
+points(species_1_each_grid, col = "red", pch = 1, cex = 0.5)
+
+#########################################################################################################
+
+identical(remnant_nearest_cell_ordered_rownames, remnant_grid_df) #check if identical
+remnant_nearest_cell_ordered_rownames %>% rownames_to_column() -> remnant_nearest_cell_rownames # add rownames to the dataframe
+merge(remnant_nearest_cell_rownames, remnant_grid_df, by = c('longitude', 'latitude')) %>% #merge on longitude and latitude
+  select(location = rowname, longitude, latitude) -> remnant_biogeo_grid
+dim(remnant_biogeo_grid)
 
 #Thresholding ####
 #Mapping ####
 #install.packages("mapr")
 library(mapr)
 
-map_plot(clean_biological, size = 1, pch = 10) #----> weird: ask Scott!!
-map_ggplot(clean3, map = "world")
+plot(cropped_occ)
+plot(clean_duplicates1)
+map_ggplot(cropped_occ, predictors)
+?map_ggplot
