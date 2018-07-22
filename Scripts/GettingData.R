@@ -32,7 +32,7 @@ for (i in 1:nrow(species_list)) {
     
     y <- c(z, z1)
   } #for-loop is still open en we continue with this vector of synonyms as an input for spocc
-}  
+  
   #write.csv(y ,paste("C:/Users/user/Documents/School/Thesis/Data RedListSpecies/Synonyms_taxize/", species_list[i, 1],".csv", sep="")) #maybe still need this
 
 #Spocc ####
@@ -42,49 +42,83 @@ for (i in 1:nrow(species_list)) {
   
 #we need to clean every data.frame in the list separatly for gbif, bison... because they differ in column numbers and column names
 
-  gbif <- species$gbif$data$Agrostemma_githago #should become [[species[i, 1]]] for one species it is Agrostemma_githago
-  if (length(gbif) == 0) {
+  gbif <- species$gbif$data #should become [[species[i, 1]]] for one species it is Agrostemma_githago
+  for (j in 1:length(gbif)) {
+  if (length(gbif[[j]]) == 0) {
     gbif1 <- data.frame()
   } else {
-    gbif1 <- select(gbif, "databaseName" = "name", "x_original" = "longitude", "y_original" = "latitude", "prov" = "prov", "spatialError" = "coordinateUncertaintyInMeters", "issues" = "issues")
-    gbif1 <- data.frame("Agrostemma githago", gbif1)
-    gbif1 <- select(gbif1, "Species" = "X.Agrostemma.githago.", "databaseName", "x_original", "y_original", "prov", "spatialError", "issues")
+    gbif1 <- select(gbif[[j]], "databaseName" = "name", "x_original" = "longitude", "y_original" = "latitude", "prov" = "prov", "spatialError" = "coordinateUncertaintyInMeters", "issues" = "issues")
+    gbif1 <- data.frame(y[[1]], gbif1)
+    gbif1 <- select(gbif1, "Species" = "y..1..", "databaseName", "x_original", "y_original", "prov", "spatialError", "issues") }
+    if (j == 1) {
+      data_gbif <- gbif1
+    } else {
+      data_gbif <- rbind(data_gbif, gbif1)
+    }
   }
   
-  bison <- species$bison$data$Agrostemma_githago
-  if (length(bison) == 0) {
+  bison <- species$bison$data
+  for (k in 1:length(bison)) {
+  if (length(bison[[k]]) == 0) {
     bison1 <- data.frame()  
   } else {
-    bison1 <- select(bison, "databaseName" = "name", "x_original" = "longitude", "y_original" = "latitude", "prov" = "prov", "spatialError" = "coordinateuncertainty")
-    bison1 <- data.frame("Agrostemma githago", bison1, "")
-    bison1 <- select(bison1, "Species" = "X.Agrostemma.githago.", "databaseName", "x_original", "y_original", "prov", "spatialError", "issues" = "X..")
-  } #still need some check up for the column names of bison
+    bison1 <- select(bison[[k]], "databaseName" = "name", "x_original" = "longitude", "y_original" = "latitude", "prov" = "prov", "spatialError" = "coordinateuncertainty")
+    bison1 <- data.frame(y[[1]], bison1, "")
+    bison1 <- select(bison1, "Species" = "y..1..", "databaseName", "x_original", "y_original", "prov", "spatialError", "issues" = "X..")
+  }
+    if (k == 1) {
+      data_bison <- bison1
+    } else {
+      data_bison <- rbind(data_bison, bison1)
+    } #still need some check up for the column names of bison
+  }
   
-  inat <- species$inat$data$Agrostemma_githago
-  if (length(inat) == 0) {
+  inat <- species$inat$data
+  for (l in 1:length(inat)) {
+  if (length(inat[[l]]) == 0) {
     inat1 <- data.frame()   
   } else {
-    inat1 <- select(inat, "databaseName" = "name", "x_original" = "longitude", "y_original" = "latitude", "prov" = "prov", "spatialError" = "positional_accuracy")
-    inat1 <- data.frame("Agrostemma githago", inat1, "")
-    inat1 <- select(inat1, "Species" = "X.Agrostemma.githago.", "databaseName", "x_original", "y_original", "prov", "spatialError", "issues" = "X..")
+    inat1 <- select(inat[[l]], "databaseName" = "name", "x_original" = "longitude", "y_original" = "latitude", "prov" = "prov", "spatialError" = "positional_accuracy")
+    inat1 <- data.frame(y[[1]], inat1, "")
+    inat1 <- select(inat1, "Species" = "y..1..", "databaseName", "x_original", "y_original", "prov", "spatialError", "issues" = "X..")
+  }
+   if (l == 1) {
+     data_inat <- inat1
+   } else {
+     data_inat <- rbind(data_inat, inat1)
+   }
   }
   
-  ecoengine <- species$ecoengine$data$Agrostemma_githago
-  if (length(ecoengine) == 0) {
+  ecoengine <- species$ecoengine$data
+  for (m in 1:length(ecoengine)) {
+  if (length(ecoengine[[m]]) == 0) {
     ecoengine1 <- data.frame()  
   } else {
-    ecoengine1 <- select(ecoengine, "databaseName" = "name", "x_original" = "longitude", "y_original" = "latitude", "prov" = "prov", "spatialError" = "coordinate_uncertainty_in_meters")
-    ecoengine1 <- data.frame("Agrostemma githago", ecoengine1, "")
-    ecoengine1 <- select(ecoengine1, "Species" = "X.Agrostemma.githago.", "databaseName", "x_original", "y_original", "prov", "spatialError", "issues" = "X..")
+    ecoengine1 <- select(ecoengine[[m]], "databaseName" = "name", "x_original" = "longitude", "y_original" = "latitude", "prov" = "prov", "spatialError" = "coordinate_uncertainty_in_meters")
+    ecoengine1 <- data.frame(y[[1]], ecoengine1, "")
+    ecoengine1 <- select(ecoengine1, "Species" = "y..1..", "databaseName", "x_original", "y_original", "prov", "spatialError", "issues" = "X..")
+  }
+   if (m == 1) {
+    data_ecoengine <- ecoengine1
+   } else {
+    data_ecoengine <- rbind(data_ecoengine, ecoengine1)
+   }
   }
   
-  idigbio <- species$idigbio$data$Agrostemma_githago
-  if (length(idigbio) == 0) {
+  idigbio <- species$idigbio$data
+  for (n in 1:length(idigbio)) {
+  if (length(idigbio[[n]]) == 0) {
     idigbio1 <- data.frame()   
   } else {
-    idigbio1 <- select(idigbio, "databaseName" = "name", "x_original" = "longitude", "y_original" = "latitude", "prov" = "prov", "spatialError" = "coordinateuncertainty")
-    idigbio1 <- data.frame("Agrostemma githago", idigbio1, "")
-    idigbio1 <- select(idigbio1, "Species" = "X.Agrostemma.githago.", "databaseName", "x_original", "y_original", "prov", "spatialError", "issues" = "X..")
+    idigbio1 <- select(idigbio[[n]], "databaseName" = "name", "x_original" = "longitude", "y_original" = "latitude", "prov" = "prov", "spatialError" = "coordinateuncertainty")
+    idigbio1 <- data.frame(y[[1]], idigbio1, "")
+    idigbio1 <- select(idigbio1, "Species" = "y..1..", "databaseName", "x_original", "y_original", "prov", "spatialError", "issues" = "X..")
+  }
+   if (n == 1) {
+    data_idigbio <- idigbio1
+   } else {
+      data_idigbio <- rbind(data_idigbio, idigbio1)
+   }
   }
   
 #BIEN ####
@@ -93,22 +127,21 @@ for (i in 1:nrow(species_list)) {
     speciesBIEN1 <- data.frame()   
   } else {
     speciesBIEN1 <- select(speciesBIEN, "databaseName" = "scrubbed_species_binomial", "x_original" = "longitude", "y_original" = "latitude", "prov" = "datasource")
-    speciesBIEN1 <- data.frame("Agrostemma githago", speciesBIEN1, "", "")
-    speciesBIEN1 <- select(speciesBIEN1, "Species" = "X.Agrostemma.githago.", "databaseName", "x_original", "y_original", "prov", "issues" = "X..", "spatialError" = "X...1")
+    speciesBIEN1 <- data.frame(y[[1]], speciesBIEN1, "", "")
+    speciesBIEN1 <- select(speciesBIEN1, "Species" = "y..1..", "databaseName", "x_original", "y_original", "prov", "issues" = "X..", "spatialError" = "X...1")
   }
   
-  data <- rbind(gbif1, bison1, inat1, ecoengine1, idigbio1, speciesBIEN1)
+  data <- rbind(data_gbif, data_bison, data_inat, data_ecoengine, data_idigbio, speciesBIEN1)
   data$x_original <- as.numeric(data$x_original) #otherwise we get errors when cleaning the data
   data$y_original <- as.numeric(data$y_original)
   data$spatialError <- as.numeric(data$spatialError)
   
-  #here we will finally close the for-loop eventually  
+  write.csv(data, paste("C:/Users/user/Documents/School/Thesis/Data RedListSpecies/Occurrence_data_spocc/", species_list[i, 1],".csv", sep="")) 
+  
+} #here we will finally close the for-loop eventually
 
 #SideNotes ####
   
-  #write csv when you use a loop
-  #we get one csvfile with the occurrence data for each species
-  #write.csv(data, paste("C:/Users/user/Documents/School/Thesis/Data RedListSpecies/Occurrence_data_spocc/", species_list[i, 1],".csv", sep="")) 
   
   #Ala database can be dropped because it wil only give results in like 1% of the cases....
   #ala <- species$ala$data$Agrostemma_githago #should become [[species[i, 1]]]
