@@ -34,6 +34,7 @@ setwd("C:/Users/user/Documents/School/Thesis/Climatic data")
 writeRaster(x = predictor_19[[1]], filename = "predictor_clipped", overwrite = TRUE, format = "GTiff", bylayer = TRUE)
 setwd("C:/Users/user/Documents/School/Thesis/Script/RedList")
 
+#loading the occurrence data
 setwd("C:/Users/user/Documents/School/Thesis/Data RedListSpecies/Occurrence_data_spocc")
 files_occurrence <- list.files(pattern = "\\.csv$")
 

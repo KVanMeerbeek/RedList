@@ -26,16 +26,24 @@ predictor_19 <- crop(predictor_19, ext)
 predictor_19 <- mask(predictor_19, Europe) # crop the extent to Europe
 crs(predictor_19) <- "+proj=longlat +datum=WGS84 +no_defs" #set projection to WGS84
 plot(predictor_19[[1]])
-predictor_n <- predictor_19[[1:3]]
+predictor_n <- predictor_19[[1:5]]
+
+#loading our clean data
 setwd("C:/Users/user/Documents/School/Thesis/Data RedListSpecies/CleanData")
 files_cleanData <- list.files(pattern = "\\.csv$")
+
+setwd("C:/Users/user/Documents/School/Thesis/Data RedListSpecies/BackgroundPointsPerSpecies")
+files_background <- list.files(pattern = "\\.csv$")
 
 #Start of ENMeval
 for (r in 1:length(files_cleanData)){
   species_of_interest <- read.csv(files_cleanData[[r]], header = TRUE, sep = ",")
   species_of_interest <- species_of_interest[, 2:4]
-  setwd("C:/Users/user/Documents/School/Thesis/Script/RedList")
+  background_of_interest <- read.csv(files_background[[r]], header = TRUE, sep = ",")
+  background_of_interest <- background_of_interest[, 2:4]
 }  
+
+setwd("C:/Users/user/Documents/School/Thesis/Script/RedList")
 
 #we use the blocked method and the feature classes "linear", "quadratic", "product".
 eval2 <- ENMevaluate(occ= species_of_interest[,2:3], n.bg = 10000, env= predictor_n, method='block', RMvalues= seq(1, 2, 1), fc=c('L', 'LQ', 'LQP'))
