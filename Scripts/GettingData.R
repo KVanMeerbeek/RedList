@@ -62,7 +62,7 @@ for (i in 1:nrow(species_list)) {
   if (length(bison[[k]]) == 0) {
     bison1 <- data.frame()  
   } else {
-    bison1 <- select(bison[[k]], "databaseName" = "name", "x_original" = "longitude", "y_original" = "latitude", "prov" = "prov", "spatialError" = "coordinateuncertainty")
+    bison1 <- select(bison[[k]], "databaseName" = "name", "x_original" = "longitude", "y_original" = "latitude", "prov" = "prov", "spatialError" = "coordinateUncertaintyInMetrs")
     bison1 <- data.frame(y[[1]], bison1, "")
     bison1 <- select(bison1, "Species" = "y..1..", "databaseName", "x_original", "y_original", "prov", "spatialError", "issues" = "X..")
   }

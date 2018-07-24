@@ -2,24 +2,44 @@
 #install.packages("scrubr")
 #install.packages("biogeo")
 #install.packages("raster")
-#install.packages("rgbif")
 #install.packages("dismo")
 #install.packages("mapr")
+#install.packages("rgdal")
 library(CoordinateCleaner)
 library(scrubr)
 library(biogeo) 
 library(raster)
 library(dismo)
 library(mapr)
+library(rgdal)
+
+#preparing the rasters we need in the cleaning
+setwd("E:/Thesis/ClimaticData/bio1-19_30s_bil/")
+files <- list.files(pattern='\\.bil$') #import tif files- change the pattern to suit the type of file
+predictor_19 <- stack(files)
+setwd("C:/Users/user/Documents/School/Thesis/Script/RedList")
+
+plot(predictor_19[[1]])
+
+Europe <- shapefile('C:/Users/user/Documents/School/Thesis/Script/RedList/Europe_shp.shp')
+ext <- extent(-31.29, 40.17972, 27.6375, 71.15471)
+crs(Europe) <- "+proj=longlat +datum=WGS84 +no_defs"
+predictor_19 <- crop(predictor_19, ext)
+predictor_19 <- mask(predictor_19, Europe) # crop the extent to Europe
+crs(predictor_19) <- "+proj=longlat +datum=WGS84 +no_defs" #set projection to WGS84
+plot(predictor_19[[1]]) #have a look at the crop 
+#[[1]] refers to the layer in the stack
+
+setwd("C:/Users/user/Documents/School/Thesis/Climatic data")
+writeRaster(x = predictor_19[[1]], filename = "predictor_clipped", overwrite = TRUE, format = "GTiff", bylayer = TRUE)
+setwd("C:/Users/user/Documents/School/Thesis/Script/RedList")
 
 setwd("C:/Users/user/Documents/School/Thesis/Data RedListSpecies/Occurrence_data_spocc")
 files_occurrence <- list.files(pattern = "\\.csv$")
 
-for (i in length(files_occurrence)){
-clean0 <- read.csv(files_occurrence[[i]], header = TRUE, sep = ",")
+for (q in 1:length(files_occurrence)) {
+clean0 <- read.csv(files_occurrence[[q]], header = TRUE, sep = ",")
 clean0 <- clean0[, 2:8]
-
-setwd("C:/Users/user/Documents/School/Thesis/Script/RedList")
 
 #Step 1: Removal of duplicates ####
 
@@ -34,8 +54,6 @@ clean2 <- coord_incomplete(clean1, lat = "y_original", lon = "x_original", drop 
 clean2 <- coord_impossible(clean2, lat = "y_original", lon = "x_original", drop = TRUE) #remove impossible coordinates #will normally give the same result after the cleaning steps which have already be done, just a built in security, function won't work
 
 clean2 <- coord_unlikely(clean2, lat = "y_original", lon = "x_original", drop = TRUE) #remove unlikely coordinates (eg 0,0) which are indicators for erroneous data and high concentrations around equator and prime meridian (Greenwich) 
-
-clean_biological <- CleanCoordinates(clean2, lon = "x_original", lat = "y_original", species = "databaseName") #test if all records are valid (if validity = TRUE --> OK!)
 
 #Step 3: Centroid detection ####
 
@@ -54,14 +72,6 @@ clean5 <- subset(clean4, !(issues == "gass84") & !(issues == "cdround"))
 #Step 6: Occurences located near sea/lakes ####
 
 #possible option when we are going to use multiple climatic layers
-setwd("E:/Thesis/ClimaticData/bio1-19_30s_bil/")
-files <- list.files(pattern='\\.bil$') #import tif files- change the pattern to suit the type of file
-predictor_19 <- stack(files)
-setwd("C:/Users/user/Documents/School/Thesis/Script/RedList")
-
-plot(predictor_19[[1]])
-plot(predictor_19[[6]])
-
 clean5$ID <- seq.int(nrow(clean5)) #format for biogeo
 clean5 %>% 
   keepmainfields(ID = 'ID', Species = 'Species', x = 'x_original', y = 'y_original') -> species_arrange_main_fields
@@ -103,16 +113,6 @@ clean9 <- cc_inst(clean7, lon = "longitude", lat = "latitude", verbose = TRUE)
 #anthro <- cc_urb(garden, lon = "longitude", lat = "latitude", verbose = TRUE) no reference provided
 
 #Step 10: Clipping to Europe ####
-ext <- extent(-15, 32, 34, 72) # this is the extent for Europe, but only a rough guess. Needs discussion
-predictor_19 <- crop(predictor_19, ext) # crop the extent to Europe
-crs(predictor_19) <- "+proj=longlat +datum=WGS84 +no_defs" #set projection to WGS84
-plot(predictor_19[[1]]) #have a look at the crop 
-#[[1]] refers to the layer in the stack
-
-setwd("C:/Users/user/Documents/School/Thesis/Climatic data")
-writeRaster(x = predictor_19[[1]], filename = "predictor_clipped", overwrite = TRUE, format = "GTiff", bylayer = TRUE)
-setwd("C:/Users/user/Documents/School/Thesis/Script/RedList")
-
 coordinates(clean9) <- ~ longitude + latitude #convert to spatial object
 clean10 <- crop(clean9, predictor_19[[1]]) #clean10 is a spatial object, not a dataframe
 
@@ -138,4 +138,7 @@ if (nrow(clean11_dataframe) < 20) {
 } else {
   write.csv(clean11_dataframe, paste("C:/Users/user/Documents/School/Thesis/Data RedListSpecies/CleanData/", clean0[1, 1],".csv", sep=""))
 }
+
+setwd("C:/Users/user/Documents/School/Thesis/Data RedListSpecies/Occurrence_data_spocc")
+
 }
